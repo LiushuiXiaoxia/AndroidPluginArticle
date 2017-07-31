@@ -1,1 +1,1 @@
-include ':app', ':ClassLoaderDemo'
+include ':app', ':ClassLoaderDemo', ':HookDemo'
