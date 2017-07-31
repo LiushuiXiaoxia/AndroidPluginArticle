@@ -1,4 +1,4 @@
-package cn.mycommons.androidpluginarticle;
+package cn.mycommons.hookdemo;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
