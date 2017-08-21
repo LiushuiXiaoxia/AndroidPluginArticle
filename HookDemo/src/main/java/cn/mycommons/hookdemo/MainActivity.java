@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     void reflectHock() {
         try {
-            Class<? extends MainActivity> aClass = getClass();
+            Class<? extends MainActivity> aClass = MainActivity.class;
             Field field = aClass.getDeclaredField("iService");
             field.setAccessible(true);
             IService service = (IService) field.get(this);
@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     void proxyHook() {
         try {
-            Class<? extends MainActivity> aClass = getClass();
+            Class<? extends MainActivity> aClass = MainActivity.class;
             Field field = aClass.getDeclaredField("iService");
             field.setAccessible(true);
             IService value = (IService) field.get(this);
