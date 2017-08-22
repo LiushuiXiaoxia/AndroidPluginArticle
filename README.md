@@ -2,8 +2,6 @@
 
 ---
 
-[TOC]
-
 <!-- TOC -->
 
 - [是时候来一波Android插件化了](#是时候来一波android插件化了)
@@ -20,11 +18,13 @@
             - [resource](#resource)
             - [安装路径](#安装路径)
         - [App启动流程介绍](#app启动流程介绍)
-            - [AIDL](#aidl)
+            - [IPC & Binder](#ipc--binder)
             - [AMS](#ams)
             - [ActivityThread](#activitythread)
         - [插件化技术问题与解决方案](#插件化技术问题与解决方案)
             - [代码加载](#代码加载)
+                - [Java ClassLoader](#java-classloader)
+                - [Android ClassLoader](#android-classloader)
             - [资源获取](#资源获取)
             - [Hook](#hook)
     - [主流框架方案](#主流框架方案)
@@ -32,7 +32,7 @@
         - [Activity代理](#activity代理)
         - [Activity占坑](#activity占坑)
     - [360RePlugin介绍](#360replugin介绍)
-        - [继承与Demo演示](#继承与demo演示)
+        - [集成与Demo演示](#集成与demo演示)
         - [原理介绍](#原理介绍)
             - [host lib](#host-lib)
             - [host gradle](#host-gradle)
@@ -264,11 +264,9 @@ public DexClassLoader(String dexPath, String optimizedDirectory, String libraryP
 
 #### 资源获取
 
-AssetsManager
+我们知道，Android Apk里面出了代码，剩下的就是资源，而且资源占了很大一部分空间，我们可以利用ClassLoader来加载代码，那么如何来加载apk中的资源，而且Android中的资源种类又可以分为很多种，比如布局、图片，字符、样式、主题等。
 
-Resource
-
-Theme
+`AssetsManager`是Android中获取资源的入口类。
 
 #### Hook
 
@@ -401,43 +399,382 @@ void proxyHook() {
 
 ### Fragment加载
 
-AndroidDynamicLoader
+最早的时候，大概2012年，出现了一个简单的Android插件化方案，大致原理是这样的。
+
+我们知道Android基本的页面元素是Activity，如果要动态加载一个界面，那么需要动态加载加载一个Activity，但是呢，Activity是需要注册在Manifest中的。
+
+所以就把目标瞄向了Fragment，Fragment是不需要注册的，使用的时候直接获new一个对象即可，然后放到了容器中，就可以使用了。
+
+首先在Manifest中定义个容器HostContainerActivity，然后页面跳转的时候通过intent，把目标的页面的fragment的class写成路径，当 HostContainerActivity 页面启动，从intent中获取Fragment的路径，然后利用反射，动态new出一个示例放入到布局中即可。
+
+[AndroidDynamicLoader](https://github.com/mmin18/AndroidDynamicLoader)就是这样一个解决方案，但是这个方案是有限制的，所有的页面必须是Fragment，这样肯定不符合要求，所以这个方案就没有流行起来。
 
 ### Activity代理
 
-dynamic-load-apk
+上面说道了使用Fragment加载的形式，来显示插件中的页面，但是这个解决方案是有限制的，界面全部只能用Fragment，不能用Activity，不能称的上是一种插件化解决方案。
+
+那到底能不能用到Activity的方式，答案是肯定的。
+
+可以这样，上面介绍了Fragment动态加载原理，我们把Fragment的路径换成Activity的路径，然后用原先的那个容器Activity，做为一个代理Activity，当HostContainerActivity启动时候，初始化将要显示的Activity，然后当容器Activity依次执行对应的生命周期时候，容器Activity做一个代理Activity，也要相应执行动态加载的Activity。
+
+大致代码示例如下：
+
+```java
+public class HostContainerActivity extends BaseActivity {
+
+    public static final String EXTRA_BASE_ACTIVITY = "extra_base_activity";
+    private BaseActivity remote;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        String clazz = getIntent().getStringExtra(EXTRA_BASE_ACTIVITY);
+        try {
+            remote = (BaseActivity) Class.forName(clazz).newInstance();
+            remote.onCreate(savedInstanceState);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        remote.onStart();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        remote.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        remote.onPause();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        remote.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        remote.onDestroy();
+    }
+}
+```
+
+[dynamic-load-apk](https://github.com/singwhatiwanna/dynamic-load-apk)  这个动态化框架就是利用这个原理来实现的。
+
+但是这个方案还是有限制的，因为插件中的Activity并不是系统直接运行的，而是由另外一个Activity作为代理运行的，这个Activity不是一个真正的Activity，
+很多的功能是限制的，比如需要在Activity弹出一个Toast，则是不行的，因为当前的Activity没有context，所以dynamic-load-apk提出了1个关键字——that，java中this表示对象本身，但是本对象不能当做context使用，因为当前的Activity只是一个Java对象，而that是真正运行的Activity对象。
 
 ### Activity占坑
 
+上面介绍Activity代理的方法，虽然插件中可以正常使用Activity，但是限制还是很多，用起来很不方便。
+
+那到底有没有最优解，既可以不需要注册Activity，又可以动态的加载Activity，答案是肯定的。我们可以来一个偷梁换柱，既然要注册咱们就先注册一个，然后启动的时候，把需要的运行的Activity当做参数传递过去，让系统启动那个替身Activity，当时机恰当的时候，我们再把那个Activity的对象给换回来即可，这个叫做瞒天过海。
+
+这里有一篇[文章](http://weishu.me/2016/03/21/understand-plugin-framework-activity-management/)详细记载了Activity占坑方案是怎么运行的以及方案的原理。
+
 ## 360RePlugin介绍
 
-### 继承与Demo演示
+Ok，上面说了这么多，全部都是引子，下面着重介绍今天的主角——RePlugin。
+
+RePlugin是一套完整的、稳定的、适合全面使用的，占坑类插件化方案，由360手机卫士的RePlugin Team研发，也是业内首个提出”全面插件化“（全面特性、全面兼容、全面使用）的方案。
+
+**其主要优势有：**
+
+- 极其灵活：
+
+主程序无需升级（无需在Manifest中预埋组件），即可支持新增的四大组件，甚至全新的插件
+
+- 非常稳定：
+
+Hook点仅有一处（ClassLoader），无任何Binder Hook！如此可做到其崩溃率仅为“万分之一”，并完美兼容市面上近乎所有的Android ROM
+
+- 特性丰富：
+
+支持近乎所有在“单品”开发时的特性。包括静态Receiver、Task-Affinity坑位、自定义Theme、进程坑位、AppCompat、DataBinding等
+
+- 易于集成：
+
+无论插件还是主程序，只需“数行”就能完成接入
+
+- 管理成熟：
+
+拥有成熟稳定的“插件管理方案”，支持插件安装、升级、卸载、版本管理，甚至包括进程通讯、协议版本、安全校验等
+
+- 数亿支撑：
+
+有360手机卫士庞大的数亿用户做支撑，三年多的残酷验证，确保App用到的方案是最稳定、最适合使用的
+
+### 集成与Demo演示
+
+集成也非常简单，比如有2个工程，一个是主工程host，一个是插件工程sub。
+
+本人写作的时候，RePlugin版本为`2.1.5`，可能会与最新版本不一致。
+
+1. 添加Host根目录Gradle依赖
+
+```
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+        classpath 'com.qihoo360.replugin:replugin-host-gradle:2.1.5'
+    }
+}
+```
+
+2. 添加Host项目Gradle依赖
+
+```
+apply plugin: 'com.android.application'
+apply plugin: 'replugin-host-gradle'
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion "26.0.0"
+    defaultConfig {
+        applicationId "cn.mycommons.replugindemo"
+        minSdkVersion 15
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repluginHostConfig {
+    useAppCompat = true
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:26.+'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile 'com.qihoo360.replugin:replugin-host-lib:2.1.5'
+
+    testCompile 'junit:junit:4.12'
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+}
+```
+
+
+3. 添加Sub根目录Gradle依赖
+
+```
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+        classpath 'com.qihoo360.replugin:replugin-plugin-gradle:2.1.5'
+    }
+}
+```
+
+4. 添加Sub项目Gradle依赖
+
+```
+apply plugin: 'com.android.application'
+apply plugin: 'replugin-plugin-gradle'
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion "26.0.0"
+
+    defaultConfig {
+        applicationId "cn.mycommons.repluginsdemo.sub"
+        minSdkVersion 15
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repluginPluginConfig {
+    //插件名
+    pluginName = "app"
+    //宿主app的包名
+    hostApplicationId = "cn.mycommons.replugindemo"
+    //宿主app的启动activity
+    hostAppLauncherActivity = "cn.mycommons.replugindemo.MainActivity"
+
+    // Name of 'App Module'，use '' if root dir is 'App Module'. ':app' as default.
+    appModule = ':app'
+
+    // Injectors ignored
+    // LoaderActivityInjector: Replace Activity to LoaderActivity
+    // ProviderInjector: Inject provider method call.
+    // ignoredInjectors = ['LoaderActivityInjector']
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+
+    compile 'com.android.support:appcompat-v7:26.+'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile 'com.qihoo360.replugin:replugin-plugin-lib:2.1.5'
+
+    testCompile 'junit:junit:4.12'
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+}
+```
 
 ### 原理介绍
 
+RePlugin源码主要分为4部分，对比其他插件化，它的强大和特色，在于它只Hook住了ClassLoader。One Hook这个坚持，最大程度保证了稳定性、兼容性和可维护性。
+
 #### host lib
+
+插件宿主库，主要是对插件的管理，以及对ClassLoader的Hook，具体原理和管理逻辑不做详细解释。
 
 #### host gradle
 
-config.json生产
+对插件宿主代码编译过程进行处理，主要有config.json文件生成、RePluginHostConfig.java代码生成、以及Activity坑位代码插入到Manifest中。
 
-Activity坑位插入
+比如我们内置一个插件，按照官方文档，这样操作的。
+
+* 将APK改名为：\[插件名\].jar
+
+* 放入主程序的assets/plugins目录
+
+我们可以看看Host apk中包含哪些资源。
+
+![](doc/901.png)
+
+插件自动生成了plugin-builtin.json文件
+
+![](doc/902.png)
+
+同时也在Manifest中插入很多坑位。
+
+![](doc/903.png)
+
+RePluginHostConfig.java代码生成逻辑。
 
 #### plugin lib
 
+同宿主库一样，这个是给插件App提供基本的支持。
+
 #### plugin gradle
 
-修改Activity的父类
+对插件App代码编译过程进行处理，主要修改插件中四大组建的父类，没错，就是这样。
+
+比如有个`LoginActivity`，它是继承`Activity`的，那么会修改它的父类为`PluginActivity`，如果是`AppCompatActivity`，那么会替换成`PluginAppCompatActivity`
+
+如：
+
+```java
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.activity_main);
+    }
+}
+```
+
+反编译Apk可以看到修改后的结果。
+
+![](doc/904.png)
+
+源码里面也有体现
+
+![](doc/905.png)
 
 ## 其他插件化方案
 
-### Install App
+上次大致是RePlugin的原理，当然除了RePlugin的解决方案以外，还有其他几家厂商的解决方案。
+
+### Instant App
+
+[Android Instant App 官网](https://developer.android.com/topic/instant-apps/index.html)
+
+16年IO的时候，Google提出了Instant App特性，在17年IO正式发布这项技术，不过这项技术在我写这篇文章的时候，还是beta版本。
+
+它的使用方式很简单，你在 Android 手机上，朋友给你发来一个链接，比方说一家外卖店面。而恰好外卖App应用也支持了 Instant Apps。你点击了这个链接，就直接进入了外卖应用，即便手机并没有安装它。
+
+实现原理大致是利用App linker唤起打开app的intent，Google Play检测到支持该intent,而且没有安装后，直接通过类似Android插件化的原理，打开相关页面。
+
+但是这个Instant App必须发布在Google Play上， 国内暂时没有办法使用。
 
 ### 淘宝atlas
 
+[atlas](https://github.com/alibaba/atlas)
+
+Atlas是伴随着手机淘宝的不断发展而衍生出来的一个运行于Android系统上的一个容器化框架，我们也叫动态组件化(Dynamic Bundle)框架。它主要提供了解耦化、组件化、动态性的支持。覆盖了工程师的工程编码期、Apk运行期以及后续运维期的各种问题。
+
+在工程期，实现工程独立开发，调试的功能，工程模块可以独立。
+
+在运行期，实现完整的组件生命周期的映射，类隔离等机制。
+
+在运维期，提供快速增量的更新修复能力，快速升级。
+
+Atlas是工程期和运行期共同起作用的框架，我们尽量将一些工作放到工程期，这样保证运行期更简单，更稳定。
+
+相比multidex，atlas在解决了方法数限制的同时以OSGI为参考，明确了业务开发的边界，使得业务在满足并行迭代，快速开发的同时，能够进行灵活发布，动态更新以及提供了线上故障快速修复的能力。
+
+与外界某些插件框架不同的是，atlas是一个组件框架，atlas不是一个多进程的框架，他主要完成的就是在运行环境中按需地去完成各个bundle的安装，加载类和资源。
+
 ### 滴滴VirtualAPK
 
+[VirtualAPK](https://github.com/didi/VirtualAPK)
+
+[VirtualAPK介绍](http://geek.csdn.net/news/detail/130917)
+
+VirtualAPK是滴滴17年开源出来的一款插件化方案。
+
 ### Small
+
+[Small](https://github.com/wequick/Small)
+
+> 世界那么大，组件那么小。Small，做最轻巧的跨平台插件化框架。 ——Galenlin
+
+这是Small作者，林光亮老师，给Small一句概括。
 
 ## 总结
 
@@ -451,15 +788,11 @@ Activity坑位插入
 
 [Android进程间通信资料](http://blog.csdn.net/luoshengyang/article/details/6618363)
 
-AMS
+[AMS](http://weishu.me/2016/03/07/understand-plugin-framework-ams-pms-hook/)
 
 [深入分析Java ClassLoader原理](http://blog.csdn.net/xyang81/article/details/7292380)
 
 [热修复入门：Android中的ClassLoader](http://jaeger.itscoder.com/android/2016/08/27/android-classloader.html)
-
-资源获取
-
-编译过程
 
 [DroidPlugin](https://github.com/Qihoo360/DroidPlugin)
 
@@ -480,3 +813,5 @@ AMS
 [VirtualAPK](https://github.com/didi/VirtualAPK)
 
 [VirtualAPK介绍](http://geek.csdn.net/news/detail/130917)
+
+[Android Instant App 官网](https://developer.android.com/topic/instant-apps/index.html)
