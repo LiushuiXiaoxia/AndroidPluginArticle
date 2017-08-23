@@ -24,6 +24,8 @@
             - [代码加载](#代码加载)
                 - [Java ClassLoader](#java-classloader)
                 - [Android ClassLoader](#android-classloader)
+                    - [PathClassLoader](#pathclassloader)
+                    - [DexClassLoader](#dexclassloader)
             - [资源获取](#资源获取)
             - [Hook](#hook)
     - [主流框架方案](#主流框架方案)
@@ -31,6 +33,7 @@
         - [Activity代理](#activity代理)
         - [Activity占坑](#activity占坑)
     - [360RePlugin介绍](#360replugin介绍)
+        - [主要优势](#主要优势)
         - [集成与Demo演示](#集成与demo演示)
         - [原理介绍](#原理介绍)
             - [host lib](#host-lib)
@@ -39,7 +42,7 @@
             - [plugin gradle](#plugin-gradle)
     - [其他插件化方案](#其他插件化方案)
         - [Instant App](#instant-app)
-        - [淘宝atlas](#淘宝atlas)
+        - [淘宝Atlas](#淘宝atlas)
         - [滴滴VirtualAPK](#滴滴virtualapk)
         - [Small](#small)
     - [总结](#总结)
@@ -215,7 +218,7 @@ SecureClassLoader的子类是URLClassLoader，其只能用来加载jar文件，�
 
 BaseDexClassLoader的子类是PathClassLoader和DexClassLoader 。
 
-**PathClassLoader**
+###### PathClassLoader
 
 PathClassLoader 在应用启动时创建，从`/data/app/{package}`安装目录下加载 apk 文件。
 
@@ -239,7 +242,7 @@ PathClassLoader 里面除了这2个构造方法以外就没有其他的代码了
 
 在Android中，App安装到手机后，apk里面的class.dex中的class均是通过PathClassLoader来加载的。
 
-**DexClassLoader**
+###### DexClassLoader
 
 介绍 DexClassLoader 之前，先来看看其官方描述：
 
@@ -536,7 +539,7 @@ Ok，上面说了这么多，全部都是引子，下面着重介绍今天的主
 
 RePlugin是一套完整的、稳定的、适合全面使用的，占坑类插件化方案，由360手机卫士的RePlugin Team研发，也是业内首个提出”全面插件化“（全面特性、全面兼容、全面使用）的方案。
 
-**其主要优势有：**
+### 主要优势
 
 - 极其灵活：
 
@@ -568,9 +571,9 @@ Hook点仅有一处（ClassLoader），无任何Binder Hook！如此可做到其
 
 本人写作的时候，RePlugin版本为`2.1.5`，可能会与最新版本不一致。
 
-1. 添加Host根目录Gradle依赖
+- 添加Host根目录Gradle依赖
 
-```
+```gradle
 buildscript {
     repositories {
         jcenter()
@@ -585,9 +588,9 @@ buildscript {
 }
 ```
 
-2. 添加Host项目Gradle依赖
+- 添加Host项目Gradle依赖
 
-```
+```gradle
 apply plugin: 'com.android.application'
 apply plugin: 'replugin-host-gradle'
 
@@ -627,10 +630,9 @@ dependencies {
 }
 ```
 
+- 添加Sub根目录Gradle依赖
 
-3. 添加Sub根目录Gradle依赖
-
-```
+```gradle
 buildscript {
     repositories {
         jcenter()
@@ -645,9 +647,9 @@ buildscript {
 }
 ```
 
-4. 添加Sub项目Gradle依赖
+- 添加Sub项目Gradle依赖
 
-```
+```gradle
 apply plugin: 'com.android.application'
 apply plugin: 'replugin-plugin-gradle'
 
@@ -718,9 +720,9 @@ RePlugin源码主要分为4部分，对比其他插件化，它的强大和特�
 
 比如我们内置一个插件，按照官方文档，这样操作的。
 
-* 将APK改名为：\[插件名\].jar
+- 将APK改名为：\[插件名\].jar
 
-* 放入主程序的assets/plugins目录
+- 放入主程序的assets/plugins目录
 
 我们可以看看Host apk中包含哪些资源。
 
@@ -784,9 +786,9 @@ public class MainActivity extends AppCompatActivity {
 
 但是这个Instant App必须发布在Google Play上， 国内暂时没有办法使用。
 
-### 淘宝atlas
+### 淘宝Atlas
 
-[atlas](https://github.com/alibaba/atlas)
+[淘宝Atlas](https://github.com/alibaba/atlas)
 
 Atlas是伴随着手机淘宝的不断发展而衍生出来的一个运行于Android系统上的一个容器化框架，我们也叫动态组件化(Dynamic Bundle)框架。它主要提供了解耦化、组件化、动态性的支持。覆盖了工程师的工程编码期、Apk运行期以及后续运维期的各种问题。
 
@@ -836,7 +838,9 @@ RePlugin使用方法还是蛮简单的，大部分情况下，插件的开发，
 
 [Android进程间通信资料](http://blog.csdn.net/luoshengyang/article/details/6618363)
 
-[AMS](http://weishu.me/2016/03/07/understand-plugin-framework-ams-pms-hook/)
+[Android系统应用框架篇：Activity启动流程](http://blog.csdn.net/AllenWells/article/details/68926952)
+
+[Android 插件化原理解析——Hook机制之AMS&PMS](http://weishu.me/2016/03/07/understand-plugin-framework-ams-pms-hook/)
 
 [深入分析Java ClassLoader原理](http://blog.csdn.net/xyang81/article/details/7292380)
 
@@ -850,7 +854,7 @@ RePlugin使用方法还是蛮简单的，大部分情况下，插件的开发，
 
 [AndroidDynamicLoader，利用动态加载Fragment来解决](https://github.com/mmin18/AndroidDynamicLoader)
 
-[dynamic-load-apk，百度任玉刚解决方案，利用Activity做代理](https://github.com/singwhatiwanna/dynamic-load-apk)
+[dynamic-load-apk](https://github.com/singwhatiwanna/dynamic-load-apk)
 
 [android-pluginmgr](https://github.com/houkx/android-pluginmgr)
 
@@ -858,7 +862,7 @@ RePlugin使用方法还是蛮简单的，大部分情况下，插件的开发，
 
 [DynamicAPK](https://github.com/CtripMobile/DynamicAPK)
 
-[atlas](https://github.com/alibaba/atlas)
+[淘宝Atlas](https://github.com/alibaba/atlas)
 
 [VirtualAPK](https://github.com/didi/VirtualAPK)
 
