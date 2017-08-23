@@ -20,7 +20,6 @@
         - [App启动流程介绍](#app启动流程介绍)
             - [IPC & Binder](#ipc--binder)
             - [AMS](#ams)
-            - [ActivityThread](#activitythread)
         - [插件化技术问题与解决方案](#插件化技术问题与解决方案)
             - [代码加载](#代码加载)
                 - [Java ClassLoader](#java-classloader)
@@ -39,7 +38,7 @@
             - [plugin lib](#plugin-lib)
             - [plugin gradle](#plugin-gradle)
     - [其他插件化方案](#其他插件化方案)
-        - [Install App](#install-app)
+        - [Instant App](#instant-app)
         - [淘宝atlas](#淘宝atlas)
         - [滴滴VirtualAPK](#滴滴virtualapk)
         - [Small](#small)
@@ -167,6 +166,10 @@ Android系统提供一种Binder机制，能够使进程之间相互通信。
 Activity启动流程说个一天也说不完，过程很长，也很繁琐，不过我们只要记住了AMS就可以了。
 
 [Android系统应用框架篇：Activity启动流程](http://blog.csdn.net/AllenWells/article/details/68926952)
+
+盗一张图
+
+![AMS](doc/ams.png)
 
 ### 插件化技术问题与解决方案
 
