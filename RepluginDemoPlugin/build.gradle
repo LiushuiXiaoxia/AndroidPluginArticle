@@ -29,6 +29,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.qihoo360.replugin:replugin-plugin-lib:2.1.5'
+    compile project(':RepluginDemoBase')
 
     testCompile 'junit:junit:4.12'
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
