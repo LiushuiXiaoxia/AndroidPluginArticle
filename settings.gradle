@@ -1,1 +1,1 @@
-include ':app', ':ClassLoaderDemo', ':HookDemo', ':ResourcesDemo', ':ResourcesPlugin'
+include ':app', ':ClassLoaderDemo', ':HookDemo', ':ResourcesDemo', ':ResourcesPlugin', ':RepluginDemoHost', ':RepluginDemoPlugin'
