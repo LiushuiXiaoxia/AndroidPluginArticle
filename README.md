@@ -50,33 +50,34 @@
 
 ## 前言
 
-今年（2017年）6月时候，有幸参加了在北京举行的GMTC大会，恰巧360的张炅轩大神分享了360的插件化方案—— [RePlugin](https://github.com/Qihoo360/RePlugin) ，当时听了以后，立马有了很大的兴趣。
+今年（2017年）6月时候，有幸参加了在北京举行的GMTC大会，恰巧360的张炅轩大神分享了360的插件化方案—— [RePlugin](https://github.com/Qihoo360/RePlugin) ，听了以后，受益匪浅。
 
-因为是公司报销费用参加的，回来后是要有技术分享，所以选择了介绍RePlugin以及Android插件化相关内容，本文主要介绍RePlugin以及自己对插件化的理解。
+因为是公司组织参加大会的，参会后需要技术分享，所以就选择介绍RePlugin以及Android插件化相关内容，本文也是主要介绍RePlugin以及自己对插件化的理解。
 
-几年前，世面上就已经出现了几款插件化的方案，同时更新技术也是遍地开花。当时是比较抵触这类技术的，个人觉的这样会破坏Android的生态圈，但是毕竟出现了这么多的插件化方案，出现总是有道理的。本着学习的态度，在这边简单介绍下插件化相关的技术点。
+因为插件化涉及到的东西比较多，由于篇幅的限制，很多知识点只是简单介绍一下，同时会给出相关链接，读者可以点击作参考。
+
+这几年，世面上就已经出现了不少几款插件化方案，同时热更新技术也是遍地开花。当时是比较抵触这类技术的，个人觉的这样会破坏Android的生态圈，但是毕竟出现了这么多的插件化方案，出现总是有道理的。本着学习的态度，还是要学习下插件化相关技术。
 
 ## Android开发演进
 
-Android开发初期，基本上是没有框架的，什么东西都往Activity里面塞，最后Activity就变得很大。然后借鉴了Java后端的思想，使用MVC模式，一定程度上解决了代码乱堆的问题，使用了一段时间MVC后，Activity依旧变的很大，因为Activity里面不光有UI的逻辑，还有数据的逻辑。
+Android开发初期，基本上没有什么框架的，什么东西都往Activity里面塞，最后Activity就变得很大。后面有些人借鉴了Java后端的思想，使用MVC模式，一定程度上解决了代码乱堆的问题，
+使用了一段时间MVC后，Activity依旧变的很大，因为Activity里面不光有UI的逻辑，还有数据的逻辑。
 
 ![MVC](doc/1_mvc.png)
 
-再后来有了MVP，MVP解决了UI逻辑和数据逻辑在一起的问题，同时也解决了Android单元测试的问题。
+再后来有了MVP，MVP解决了UI逻辑和数据逻辑在一起的问题，同时也解决了Android代码测试困难问题。
 
 ![MVP](doc/1_mvp.png)
 
-随着业务的增多，我们添加了Domain的概念，Domain从Data中获取数据，Data可能会是Net，File，Cache各种IO等，然后项目架构变成了这样。
+随着业务的增多，架构中有了Domain的概念，Domain从Data中获取数据，Data可能会是Net，File，Cache各种IO等，然后项目架构变成了这样。
 
 ![MVP2](doc/2.png)
 
 ## 模块化介绍
 
-上面的MVP升级版用了一段时间以后，新问题又出现了。
+MVP升级版用了一段时间以后，新问题又出现了。随着业务的增多，代码变的越来越复杂，每个模块之间的代码耦合变得越来越严重，解耦问题急需解决，同时编译时间也会越来越长。
 
-随着业务的增多，代码变的越来越复杂，每个模块之间的代码耦合变得越来越严重，解耦问题急需解决，同时编译时间也会越来越长。
-
-人员增多，每个业务的组件各自实现一套，导致同一个App的UI风格不一样，技术实现也不一样，团队技术无法得到沉淀。
+开发人员增多，每个业务的组件各自实现一套，导致同一个App的UI风格不一样，技术实现也不一样，团队技术也无法得到沉淀，重复早轮子严重。
 
 ![Modular](doc/3.png)
 
@@ -86,25 +87,26 @@ Android开发初期，基本上是没有框架的，什么东西都往Activity�
 
 ## 插件化介绍
 
-讲道理，模块化已经是最终的解决方案了，为啥还要有插件化呢？
+讲道理，模块化已经是最终完美的解决方案了，为啥还需要插件化呢？
 
-还是得从业务说起，如果一个公司有很多业务，并且每个业务可以汇总成一个大的App，又或者某一个小业务又可以单独做成一个小的App。
+还是得从业务说起，如果一个公司有很多业务，并且每个业务可以汇总成一个大的App，又或者某一个小业务又需要单独做成一个小的App。
 
-按照上面的说的模块化解决方案，需要把这个业务设计成一个模块，代码最终打包成一个aar，主App和业务App设计成一个运行壳子，打包的时候使用Gradle做maven依赖即可。
+按照上面的说的模块化解决方案，需要把这个业务设计成一个模块，代码最终打包成一个aar，主App和业务App设计成一个运行壳子，编译打包时候使用Gradle做maven依赖即可。
 
 举例说明美团和猫眼电影。
 
 ![美团和猫眼](doc/6.png)
 
-实际上这样做比较麻烦，主App和业务模块会或多或少依赖一点公共代码，如果公共代码出现变动，则需要对应做出修改。同时业务代码会设计成Android Lib project，开发、编译、调试也有点麻烦，那么能不能这样设计，某个业务模块单独做出一个Apk，主App直接使用插件的方式，如果需要某种功能，那么直接加载某一个apk，而不是直接代码的形式。
+实际上这样做比较麻烦，主App和业务模块会或多或少依赖一点公共代码，如果公共代码出现变动，则需要对应做出修改。
+同时业务代码会设计成Android Lib project，开发、编译、调试也有点麻烦，那么能不能这样设计，某个业务模块单独做出一个Apk，主App直接使用插件的方式，如果需要某种功能，那么直接加载某一个apk，而不是直接依赖代码的形式。
 
 ## 前提技术介绍
 
-通过上面的业务演进，最终我们需要做的就是一个Apk调用另外一个Apk文件，这个就是我们今天需要讲的主题插件化。
+通过上面的业务演进，最终我们需要做的就是一个Apk调用另外一个Apk文件，这也就是我们今天的主题——插件化。
 
-一个常识，大家都知道，Apk只有在安装的情况下，才可以被运行，如果一个Apk只是一个文件，放置在存储卡上，我们如何才能调用起来呢？
+一个常识，大家都知道，Apk只有在安装的情况下，才可以被运行调用。如果一个Apk只是一个文件，放置在存储卡上，我们如何才能调用起来呢？
 
-上面的问题，接下来会做讲解，为了简单快速的了解插件化，需要先回顾一下基础知识。
+对于这个问题，先保留，后面会做讲解，当然了已经有几种方案是可以这样做的。但是为了了解插件化的原理，先回顾一下基础知识。
 
 ### APK构成
 
@@ -116,7 +118,7 @@ Apk是App代码最终编译打包生成的文件，主要包含代码（dex、so
 
 App中系统组件配置文件，包括Application、Activity、Service、Receiver、Provider等。
 
-App中所有的可运行的Activity必须要在这里定义，否则就不能运行，包括其他组件，Receiver也可以动态注册。（敲黑板，这里很重要，记住这句话。）
+App中所有可运行的Activity必须要在这里定义，否则就不能运行，也包括其他组件，Receiver也可以动态注册。（敲黑板，这里很重要，记住这句话。）
 
 #### Application
 
@@ -140,9 +142,9 @@ Android中资源文件比较多，通常放在res和assets文件夹下面。常�
 
 ![安装路径](doc/8.png)
 
-`/data/app/{package}/`主要放置apk文件，同时Cpu对于so文件也会被解压到对应的文件夹中，Android高级版本中还会对dex做优化，生产odex文件，也在这个文件夹中。
+`/data/app/{package}/`主要放置Apk文件，同时Cpu对应的so文件也会被解压到对应的文件夹中，Android高级版本中还会对dex做优化，生成odex文件也在这个文件夹中。
 
-`data/data/{pcakge}/`主要存放App生产的数据，比如SharedPreferences、cache等其他文件。
+`data/data/{package}/`主要存放App生成的数据，比如SharedPreferences、cache等其他文件。
 
 那么问题来了，如果调用为安装的Apk，假设能够运行，那么他们的运行文件放在哪里？代码中生成的数据文件又要放在哪里？
 
@@ -162,11 +164,9 @@ Android系统提供一种Binder机制，能够使进程之间相互通信。
 
 #### AMS
 
-启动流程
+Activity启动流程说个一天也说不完，过程很长，也很繁琐，不过我们只要记住了AMS就可以了。
 
-http://blog.csdn.net/AllenWells/article/details/68926952
-
-#### ActivityThread
+[Android系统应用框架篇：Activity启动流程](http://blog.csdn.net/AllenWells/article/details/68926952)
 
 ### 插件化技术问题与解决方案
 
@@ -214,9 +214,9 @@ BaseDexClassLoader的子类是PathClassLoader和DexClassLoader 。
 
 **PathClassLoader**
 
-PathClassLoader 在应用启动时创建，从 data/app/… 安装目录下加载 apk 文件。
+PathClassLoader 在应用启动时创建，从`/data/app/{package}`安装目录下加载 apk 文件。
 
-其有 2 个构造函数，如下所示，这里遵从之前提到的双亲委托模型：
+有2个构造函数，如下所示，这里遵从之前提到的双亲委托模型：
 
 ```java
 public PathClassLoader(String dexPath, ClassLoader parent) {
@@ -264,13 +264,48 @@ public DexClassLoader(String dexPath, String optimizedDirectory, String libraryP
 
 #### 资源获取
 
-我们知道，Android Apk里面出了代码，剩下的就是资源，而且资源占了很大一部分空间，我们可以利用ClassLoader来加载代码，那么如何来加载apk中的资源，而且Android中的资源种类又可以分为很多种，比如布局、图片，字符、样式、主题等。
+我们知道，Android Apk里面除了代码，剩下的就是资源，而且资源占了很大一部分空间，我们可以利用ClassLoader来加载代码，那么如何来加载apk中的资源，而且Android中的资源种类又可以分为很多种，比如布局、图片，字符、样式、主题等。
 
-`AssetsManager`是Android中获取资源的入口类。
+在组件中获取资源时使用getResource获得Resource对象，通过这个对象我们可以访问相关资源，比如文本、图片、颜色等。
+
+通过跟踪源码发现，其实getResource方法是Context的一个抽象方法，getResource的实现是在ContextImp中实现的。
+获取的Resource对象是应用的全局变量，然后继续跟踪源码，发现 Resource中有一个AssetManager的全局变量，在Resource的构造函数中传入的，所以最终获取资源都是通过AssetManager获取的，于是我们把注意力放到AssetManager上。
+
+我们要解决下面两个问题。
+
+一、如何获取AssetManager对象。
+
+二、如何通过AssetManager对象获取插件中apk的资源。
+
+通过对AssetManager的相关源码跟踪，我们找到答案。
+
+一、AssetManager的构造函数没有对api公开，不能使用new创建；context.getAssets()可用获取当前上下文环境的 AssetManager；利用反射 AssetManager.class.newInstance()这样可用获取对象。
+
+二、如何获取插件apk中的资源。我们发现AssetManager中有个重要的方法。
+
+```java
+/**
+ * Add an additional set of assets to the asset manager.  This can be
+ * either a directory or ZIP file.  Not for use by applications.  Returns
+ * the cookie of the added asset, or 0 on failure.
+ * {@hide}
+ */
+public final int addAssetPath(String path) {
+    return  addAssetPathInternal(path, false);
+}
+```
+
+我们可以把一个包含资源的文件包添加到assets中。这就是AssetManager查找资源的第一个路径。这个方法是一个隐藏方法，我们可以通过反射调用。
+
+```java
+AssetManager assetManager = AssetManager.class.newInstance() ; // context .getAssets()？
+AssetManager.class.getDeclaredMethod("addAssetPath", String.class).invoke(assetManager, apkPath);
+Resources pluginResources = new Resources(assetManager, context.getResources().getDisplayMetrics(), context.getResources().getConfiguration());
+```
 
 #### Hook
 
-Hook可以修改函数的调用以及增强系统Api，是常见的一种手段，通常使用代理模式就可以达到Hook目的。
+Hook就是可以修改函数的调用，通常可以通过代理模式就可以达到修改的目的。
 
 比如有个Java示例代码
 
@@ -399,23 +434,25 @@ void proxyHook() {
 
 ### Fragment加载
 
-最早的时候，大概2012年，出现了一个简单的Android插件化方案，大致原理是这样的。
+早在2012年时候，出现了一个简单的Android插件化方案，原理大致这样的。
 
-我们知道Android基本的页面元素是Activity，如果要动态加载一个界面，那么需要动态加载加载一个Activity，但是呢，Activity是需要注册在Manifest中的。
+我们知道Android基本的页面元素是Activity，如果要动态加载一个界面，那么需要动态加载加载一个Activity，但是Activity是需要注册在Manifest中的。
 
-所以就把目标瞄向了Fragment，Fragment是不需要注册的，使用的时候直接获new一个对象即可，然后放到了容器中，就可以使用了。
+所以就把目标瞄向了Fragment，首先Fragment是不需要注册的，使用的时候直接new出一个对象即可，然后放到了Activity容器中即可，那么能否从一个apk钟加载出来一个FragmentClass，然后使用反射实例化，然后放入到Activity中呢？
 
-首先在Manifest中定义个容器HostContainerActivity，然后页面跳转的时候通过intent，把目标的页面的fragment的class写成路径，当 HostContainerActivity 页面启动，从intent中获取Fragment的路径，然后利用反射，动态new出一个示例放入到布局中即可。
+答案是可以的，首先在Manifest中定义个容器HostContainerActivity，然后页面跳转的时候通过intent，把目标的页面的fragment的class写成路径，
+当 HostContainerActivity 页面启动，从intent中获取Fragment的路径，然后利用反射，动态new出一个示例放入到布局中即可。
 
 [AndroidDynamicLoader](https://github.com/mmin18/AndroidDynamicLoader)就是这样一个解决方案，但是这个方案是有限制的，所有的页面必须是Fragment，这样肯定不符合要求，所以这个方案就没有流行起来。
 
 ### Activity代理
 
-上面说道了使用Fragment加载的形式，来显示插件中的页面，但是这个解决方案是有限制的，界面全部只能用Fragment，不能用Activity，不能称的上是一种插件化解决方案。
+上面说道了使用Fragment加载的形式，来显示插件中的页面，但是这个解决方案是有限制的，界面全部只能用Fragment，不能用Activity，不能称的上是一种完美的插件化解决方案。
 
 那到底能不能用到Activity的方式，答案是肯定的。
 
-可以这样，上面介绍了Fragment动态加载原理，我们把Fragment的路径换成Activity的路径，然后用原先的那个容器Activity，做为一个代理Activity，当HostContainerActivity启动时候，初始化将要显示的Activity，然后当容器Activity依次执行对应的生命周期时候，容器Activity做一个代理Activity，也要相应执行动态加载的Activity。
+可以这样，上面介绍了Fragment动态加载原理，我们把Fragment的路径换成Activity的路径，然后用原先的那个容器Activity，做为一个代理Activity，当HostContainerActivity启动时候，
+初始化将要显示的Activity，然后当容器Activity依次执行对应的生命周期时候，容器Activity做一个代理Activity，也要相应执行动态加载的Activity。
 
 大致代码示例如下：
 
@@ -478,13 +515,15 @@ public class HostContainerActivity extends BaseActivity {
 [dynamic-load-apk](https://github.com/singwhatiwanna/dynamic-load-apk)  这个动态化框架就是利用这个原理来实现的。
 
 但是这个方案还是有限制的，因为插件中的Activity并不是系统直接运行的，而是由另外一个Activity作为代理运行的，这个Activity不是一个真正的Activity，
-很多的功能是限制的，比如需要在Activity弹出一个Toast，则是不行的，因为当前的Activity没有context，所以dynamic-load-apk提出了1个关键字——that，java中this表示对象本身，但是本对象不能当做context使用，因为当前的Activity只是一个Java对象，而that是真正运行的Activity对象。
+很多的功能是限制的，比如需要在Activity弹出一个Toast，则是不行的，因为当前的Activity没有context，所以dynamic-load-apk提出了1个关键字——that，
+java中this表示对象本身，但是本对象不能当做context使用，因为当前的Activity只是一个Java对象，而that是真正运行的Activity对象。
 
 ### Activity占坑
 
 上面介绍Activity代理的方法，虽然插件中可以正常使用Activity，但是限制还是很多，用起来很不方便。
 
-那到底有没有最优解，既可以不需要注册Activity，又可以动态的加载Activity，答案是肯定的。我们可以来一个偷梁换柱，既然要注册咱们就先注册一个，然后启动的时候，把需要的运行的Activity当做参数传递过去，让系统启动那个替身Activity，当时机恰当的时候，我们再把那个Activity的对象给换回来即可，这个叫做瞒天过海。
+那到底有没有最优解，既可以不需要注册Activity，又可以动态的加载Activity，答案是肯定的。我们可以来一个偷梁换柱，既然要注册咱们就先注册一个，然后启动的时候，
+把需要的运行的Activity当做参数传递过去，让系统启动那个替身Activity，当时机恰当的时候，我们再把那个Activity的对象给换回来即可，这个叫做瞒天过海。
 
 这里有一篇[文章](http://weishu.me/2016/03/21/understand-plugin-framework-activity-management/)详细记载了Activity占坑方案是怎么运行的以及方案的原理。
 
@@ -778,6 +817,12 @@ VirtualAPK是滴滴17年开源出来的一款插件化方案。
 
 ## 总结
 
+本文只是简单的介绍下插件化相关内容，很多内容也是参照大神的博客的，感觉80%都是从别人那边复制过来的，同时插件不只是简单的加载界面和资源，包括BroadCastReceiver、Service等组件使用。
+
+RePlugin使用方法还是蛮简单的，大部分情况下，插件的开发，相当于单独的一个App开发。
+
+相对于其他厂商的方案，个人比较偏向于RePlugin，主要是因为开发简单，比较稳定，Hook点少，支持特性较多等。
+
 ## 相关资料
 
 [关于Android模块化我有一些话不知当讲不当讲](https://github.com/LiushuiXiaoxia/AndroidModular)
@@ -793,6 +838,8 @@ VirtualAPK是滴滴17年开源出来的一款插件化方案。
 [深入分析Java ClassLoader原理](http://blog.csdn.net/xyang81/article/details/7292380)
 
 [热修复入门：Android中的ClassLoader](http://jaeger.itscoder.com/android/2016/08/27/android-classloader.html)
+
+[ANDROID应用程序插件化研究之ASSETMANAGER](http://www.liuguangli.win/archives/370)
 
 [DroidPlugin](https://github.com/Qihoo360/DroidPlugin)
 
