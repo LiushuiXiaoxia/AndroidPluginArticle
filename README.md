@@ -65,15 +65,15 @@
 Android开发初期，基本上没有什么框架的，什么东西都往Activity里面塞，最后Activity就变得很大。后面有些人借鉴了Java后端的思想，使用MVC模式，一定程度上解决了代码乱堆的问题，
 使用了一段时间MVC后，Activity依旧变的很大，因为Activity里面不光有UI的逻辑，还有数据的逻辑。
 
-![MVC](doc/1_mvc.png)
+![MVC](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/1_mvc.png)
 
 再后来有了MVP，MVP解决了UI逻辑和数据逻辑在一起的问题，同时也解决了Android代码测试困难问题。
 
-![MVP](doc/1_mvp.png)
+![MVP](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/1_mvp.png)
 
 随着业务的增多，架构中有了Domain的概念，Domain从Data中获取数据，Data可能会是Net，File，Cache各种IO等，然后项目架构变成了这样。
 
-![MVP2](doc/2.png)
+![MVP2](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/2.png)
 
 ## 模块化介绍
 
@@ -81,11 +81,11 @@ MVP升级版用了一段时间以后，新问题又出现了。随着业务的�
 
 开发人员增多，每个业务的组件各自实现一套，导致同一个App的UI风格不一样，技术实现也不一样，团队技术也无法得到沉淀，重复早轮子严重。
 
-![Modular](doc/3.png)
+![Modular](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/3.png)
 
 然后模块化（组件化）解决方案就出现了。
 
-![Modular2](doc/4.png)
+![Modular2](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/4.png)
 
 ## 插件化介绍
 
@@ -97,7 +97,7 @@ MVP升级版用了一段时间以后，新问题又出现了。随着业务的�
 
 举例说明美团和猫眼电影。
 
-![美团和猫眼](doc/6.png)
+![美团和猫眼](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/6.png)
 
 实际上这样做比较麻烦，主App和业务模块会或多或少依赖一点公共代码，如果公共代码出现变动，则需要对应做出修改。
 同时业务代码会设计成Android Lib project，开发、编译、调试也有点麻烦，那么能不能这样设计，某个业务模块单独做出一个Apk，主App直接使用插件的方式，如果需要某种功能，那么直接加载某一个apk，而不是直接依赖代码的形式。
@@ -114,7 +114,7 @@ MVP升级版用了一段时间以后，新问题又出现了。随着业务的�
 
 Apk是App代码最终编译打包生成的文件，主要包含代码（dex、so）、配置文件、资源问题、签名校验等。
 
-![](doc/7.png)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/7.png)
 
 #### Manifest
 
@@ -142,7 +142,7 @@ Android中资源文件比较多，通常放在res和assets文件夹下面。常�
 
 上面的介绍的Apk结构，那么Apk安装以后，它的安装位置在哪，资源和数据又放在哪里呢？
 
-![安装路径](doc/8.png)
+![安装路径](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/8.png)
 
 `/data/app/{package}/`主要放置Apk文件，同时Cpu对应的so文件也会被解压到对应的文件夹中，Android高级版本中还会对dex做优化，生成odex文件也在这个文件夹中。
 
@@ -162,7 +162,7 @@ Android系统提供一种Binder机制，能够使进程之间相互通信。
 
 [Android进程间通信资料](http://blog.csdn.net/luoshengyang/article/details/6618363)
 
-![](doc/ipc.gif)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/ipc.gif)
 
 #### AMS
 
@@ -172,7 +172,7 @@ Activity启动流程说个一天也说不完，过程很长，也很繁琐，不
 
 盗一张图
 
-![AMS](doc/ams.png)
+![AMS](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/ams.png)
 
 ### 插件化技术问题与解决方案
 
@@ -726,15 +726,15 @@ RePlugin源码主要分为4部分，对比其他插件化，它的强大和特�
 
 我们可以看看Host apk中包含哪些资源。
 
-![](doc/901.png)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/901.png)
 
 插件自动生成了plugin-builtin.json文件
 
-![](doc/902.png)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/902.png)
 
 同时也在Manifest中插入很多坑位。
 
-![](doc/903.png)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/903.png)
 
 RePluginHostConfig.java代码生成逻辑。
 
@@ -764,11 +764,11 @@ public class MainActivity extends AppCompatActivity {
 
 反编译Apk可以看到修改后的结果。
 
-![](doc/904.png)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/904.png)
 
 源码里面也有体现
 
-![](doc/905.png)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/AndroidPluginArticle/master/doc/905.png)
 
 ## 其他插件化方案
 
