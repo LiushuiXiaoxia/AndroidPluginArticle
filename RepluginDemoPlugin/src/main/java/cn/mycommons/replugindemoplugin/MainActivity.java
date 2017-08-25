@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "Plugin onCreate: Instance = " + object);
         Log.e(TAG, "Plugin onCreate: Instance = " + this);
         Log.e(TAG, "Plugin onCreate: Application = " + getApplication());
+        Log.e(TAG, "Plugin onCreate: ApplicationContext = " + getApplicationContext());
 
         Toast.makeText(getApplicationContext(), "" + object, Toast.LENGTH_SHORT).show();
     }

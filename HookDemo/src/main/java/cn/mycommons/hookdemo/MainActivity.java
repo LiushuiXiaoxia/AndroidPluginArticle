@@ -19,8 +19,8 @@ public class MainActivity extends AppCompatActivity {
         iService = new ServiceImpl();
         callService();
 
-        // reflectHock();
-        proxyHook();
+         reflectHock();
+//        proxyHook();
 
         callService();
     }

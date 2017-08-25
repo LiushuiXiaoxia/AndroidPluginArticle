@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void getStringFromApk() {
-//        copyApk();
+        copyApk();
         AssetManager assetManager = createAssetManager();
         Resources pluginResources = createResources(assetManager);
         getStringFromPlugin(pluginResources);
